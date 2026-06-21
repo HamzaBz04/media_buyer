@@ -1,0 +1,15 @@
+[project]
+name = "media-buyer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "apscheduler>=3.11.2",
+    "facebook-business>=25.0.2",
+    "fastapi>=0.137.2",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "requests>=2.34.2",
+    "uvicorn>=0.49.0",
+]
