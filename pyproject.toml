@@ -8,6 +8,7 @@ dependencies = [
     "apscheduler>=3.11.2",
     "facebook-business>=25.0.2",
     "fastapi>=0.137.2",
+    "langfuse>=4.13.0",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
