@@ -15,7 +15,7 @@ scheduler.add_job(
 )
 
 # ASTUCE DE TEST : Décommente la ligne ci-dessous pour forcer l'envoi toutes les 10 secondes le temps de vérifier que ça marche !
-scheduler.add_job(media_buyer.generate_daily_metrics_report, 'interval', seconds=10)
+# scheduler.add_job(media_buyer.generate_daily_metrics_report, 'interval', seconds=10)
 # [NOUVEAU CRON] Surveillance du Pixel toutes les 6 heures
 scheduler.add_job(
     media_buyer.verify_conversions_watchdog, 

@@ -1,0 +1,189 @@
+# Agent Media Buyer
+
+Le Media Buyer Agent est un microservice autonome et financier au sein de l'architecture AI Growth System. Il agit comme le "trading desk" du système : il interagit en temps réel avec l'API Meta Graph pour ajuster dynamiquement les enchères en fonction du ROAS, surveiller la consommation budgétaire (Pacing), optimiser les calendriers de diffusion (Dayparting), et réinjecter des données de conversion sécurisées (CAPI) pour éduquer les algorithmes publicitaires. Toutes ses décisions sont tracées de manière transparente (XAI) via Langfuse.
+
+---
+
+## Responsibilities
+
+- **Ajustement dynamique des enchères (Bidding) :** Calcul du ROAS et modification autonome du budget des Ad Sets pour maximiser la rentabilité.
+- **Surveillance budgétaire (Pacing & Kill Switch) :** Audit du rythme de dépense et mise en pause d'urgence des campagnes en cas de sous-performance critique.
+- **Optimisation temporelle (Dayparting) :** Analyse des statistiques horaires et ajustement du calendrier de diffusion (Ad Scheduling) pour prioriser les créneaux rentables.
+- **Conversion API (CAPI) :** Réception des deals "Closed Won" de l'Agent Analyste, cryptage des données sensibles (SHA-256), et envoi Server-to-Server vers Meta.
+- **Création d'Audiences :** Ingestion de segments VIP du CRM pour générer des Custom Audiences et des Lookalikes.
+- **Monitoring du Tracking (Watchdog) :** Surveillance de la santé du Pixel Meta et déclenchement d'alertes de sévérité S1 en cas de coupure des remontées de données.
+- **Traçabilité et Observabilité (XAI) :** Enregistrement de chaque décision autonome, des raisons (`decision_reason`), et des états avant/après dans Langfuse SDK v4.
+
+---
+
+## What this agent does NOT do
+
+- Il ne crée pas les visuels ni les textes publicitaires (cette tâche incombe à l'Agent Créatif).
+- Il n'analyse pas les données brutes de qualification des leads dans le CRM (cette tâche incombe à l'Agent Analyste).
+- Il ne répond pas aux commentaires des utilisateurs sur les publicités Meta.
+- Il ne gère pas la facturation ni les informations de carte bancaire au sein du Business Manager Meta.
+
+---
+
+## Setup
+
+### 1. Cloner le repository
+
+Placez-vous dans le répertoire du projet.
+
+```bash
+cd agents/media_buyer
+```
+
+### 2. Créer l'environnement virtuel et synchroniser les dépendances
+
+```bash
+uv venv
+source .venv/bin/activate  # Sous Windows : .venv\Scripts\activate
+uv sync
+```
+
+### 3. Configurer les variables d'environnement
+
+Créez un fichier `.env` à la racine du dossier de l'agent en vous basant sur le tableau suivant.
+
+---
+
+## Environment variables
+
+| Variable Name | Description | Required | Example Value |
+|---------------|-------------|----------|---------------|
+| `META_ACCESS_TOKEN` | Token utilisateur système pour l'API Meta Graph | Oui | `EAAL...` |
+| `META_AD_ACCOUNT_ID` | Identifiant du compte publicitaire cible | Oui | `act_1234567890` |
+| `META_APP_SECRET` | Clé secrète de l'application Meta (Sécurité API) | Oui | `a1b2c3d4e5...` |
+| `LANGFUSE_PUBLIC_KEY` | Clé publique pour l'observabilité Langfuse | Oui | `pk-lf-...` |
+| `LANGFUSE_SECRET_KEY` | Clé secrète pour l'observabilité Langfuse | Oui | `sk-lf-...` |
+| `LANGFUSE_HOST` | URL de l'instance Langfuse | Oui | `https://cloud.langfuse.com` |
+| `TELEGRAM_BOT_TOKEN` | Token d'authentification du bot d'alerte | Oui | `123456:ABC-DEF...` |
+| `TELEGRAM_CHAT_ID` | ID du canal de réception des alertes | Oui | `-100123456789` |
+
+---
+
+## Running the agent
+
+### Mode développement
+
+Pour lancer l'agent avec rechargement automatique :
+
+```bash
+uv run uvicorn main:app --port 8004 --reload
+```
+
+### Mode production
+
+```bash
+uv run uvicorn main:app --host 0.0.0.0 --port 8004 --workers 4
+```
+
+---
+
+## Running tests
+
+```bash
+uv run pytest tests/
+```
+
+---
+
+## Current phase
+
+**Phase C (Complétée).**
+
+L'agent a dépassé le stade des simples appels API (Lecture/Écriture) pour devenir pleinement autonome. Il intègre désormais :
+
+- la résilience réseau inter-agents (`httpx` + `tenacity`) ;
+- l'injection de revenus via le Conversion API ;
+- l'analyse temporelle complexe (Dayparting) ;
+- une observabilité absolue compatible avec les exigences strictes de l'interface graphique (Dashboard Frontend).
+
+---
+
+## Phase validation checklist
+
+- [x] Extraction granulaire des données Meta Graph API réussie.
+- [x] Prise de décision algorithmique (ROAS, Pacing, Dayparting) fonctionnelle.
+- [x] Modification d'enchères et d'états d'Ad Sets (`update_adset_schedule`, `pause`) validée.
+- [x] Ingestion et hachage cryptographique (SHA-256) pour le Conversion API (CAPI) implémentés.
+- [x] Résilience réseau avec `httpx` et `tenacity` (Retries exponentiels) assurée.
+- [x] Traçabilité XAI complète via Langfuse SDK v4 (Tags, metadata structurées, états Old/New) déployée.
+- [x] Webhooks d'alerte Telegram configurés et déclenchés conditionnellement.
+
+---
+
+## Known limitations
+
+### Ad Scheduling (Dayparting)
+
+L'API Meta rejette l'application d'un calendrier horaire sur des campagnes configurées en **Daily Budget**. Un contournement (Bypass) logiciel est actif pour valider la logique en environnement Sandbox.
+
+### Conversion API (Sandbox)
+
+L'envoi de requêtes CAPI en Sandbox valide la structure syntaxique du payload, mais les événements ne sont pas toujours persistants dans l'interface du gestionnaire d'événements Meta.
+
+### Audiences Lookalike
+
+Meta exige un minimum de **100 utilisateurs actifs identifiés** pour créer un Lookalike. Les tests avec des segments CRM réduits (ex. : 5 contacts) renvoient l'erreur **"Audience too small"** sur l'API de production.
+
+---
+
+## Inputs and outputs
+
+### Inputs (Ce que l'agent reçoit)
+
+**Format :**
+
+Payloads JSON (via Webhooks) ou réponses API Meta.
+
+**Exemple (Webhook CAPI depuis l'Analyste)**
+
+```json
+{
+  "email": "acheteur@vip.com",
+  "event_name": "Purchase",
+  "value": 1500.0,
+  "currency": "EUR",
+  "pixel_id": "123456789"
+}
+```
+
+---
+
+### Outputs (Ce que l'agent produit)
+
+**Format :**
+
+- Requêtes HTTP (`POST`/`PUT`) vers Meta
+- Traces structurées vers Langfuse
+- Messages HTML vers Telegram
+
+**Exemple (Trace d'audit Langfuse pour le Dayparting)**
+
+```json
+{
+  "name": "dayparting_audit",
+  "tags": [
+    "media_buyer",
+    "autonomous_action",
+    "daypart"
+  ],
+  "metadata": {
+    "campaign_id": "120247550406740625",
+    "decision_reason": "Optimisation des horaires de diffusion (Sur 500 conv). Résultat : [lundi_19h] Fort -> Maintien",
+    "metrics": {
+      "old_schedule": "24/7_DEFAULT",
+      "new_schedule": [
+        {
+          "start_minute": 1140,
+          "end_minute": 1200,
+          "days": [1]
+        }
+      ]
+    }
+  }
+}
+```
